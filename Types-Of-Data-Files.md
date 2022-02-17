@@ -162,8 +162,43 @@ ENDMDL
   -  -24.877 1.931 -4.644 ...orthogonal coordinates of the atom
   -  1.00 ... occupancy (propotion of time atom spends occupying a praticualr position in case of flexible molecules). If all atoms take only one conformation, so their occupacy is 100%(1.00)
   -  0.00 ... temperature factor(B-factor)
-  -  
+    -  C ... elemental symbol on periodic table
+  - A **TER record** is given after all atoms of a chain are listed 
+```s
+ATOM    543  HB2 ASP A  30      13.952  -5.133 -14.399  1.00  0.00           H
+ATOM    544  HB3 ASP A  30      13.434  -6.033 -12.973  1.00  0.00           H
+TER     545      ASP A  30
+ATOM    546  N   ASP B  -3     -24.040  -6.834   4.973  1.00  0.00           N
+ATOM    547  CA  ASP B  -3     -24.918  -6.297   3.894  1.00  0.00           C
+``` 
+  - The TER record indicates the name of the last residue and chain for the atom that was just given
 
+### Bookkeeping Section
+
+- There are two records at the end of a PDB file: **MASTER** and **END**
+
+```s
+MASTER      124    0    0    2    0    0    0    616320   30    2    6
+```
+- In the above example, we can see that there are 124 REMARK records and 16320 atomic coordinate records. At first, it appears to say there are 616320 atoms, but this is because there are only 5 characters reserved for the field indicating the number of atoms. The initial "6" refers to the number of coordinate transformation records
+- The final record is simply **END**
+
+### Hetrogen Section
+
+Heterogens are "non-standard" residues
+```s
+HET    BGC  A 901      12
+```
+- This record tells us that heterogen #901 is named BGC, is part of chain A, and has 12 corresponding HETATM records. 
+- A few lines later, a HETNAM record tells us the full name of BGC
+```s
+HETNAM     BGC BETA-D-GLUCOSE
+```
+- HETATM records are analogous to ATOM records, except that they give information about chemicals that aren't standard amino acids or nucleotides. For example, both water and modified amino acids are considered heterogens.
+- Below is the first heterogen atom entry:
+```s
+HETATM10783  C2  BGC A 901      11.313  82.102 123.399  1.00195.30           C 
+```
 
 ## PSF Files
 
