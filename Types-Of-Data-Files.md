@@ -258,6 +258,9 @@ Further Hetrogens use LINK and CONECT records discussed earlier
 
 ## PSF Files
 
+- A PSF file, also called a protein structure file, contains all of the molecule-specific information needed to apply a particular force field to a molecular system. The CHARMM force field is divided into a topology file, which is needed to generate the PSF file, and a parameter file, which supplies specific numerical values for the generic CHARMM potential function.
+- PSF files may be in either CHARMM or X-PLOR format, with the CHARMM format using an integer rather than a name for the atom type.
+
 - PSF files are required because :
   -  in PDB the bonds between most atoms are not explicitly defined. 
 
