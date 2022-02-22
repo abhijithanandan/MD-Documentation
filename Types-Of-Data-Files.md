@@ -1,12 +1,12 @@
 # Types of Data Files
 
-## General Cassification
+## General Classification
 
 - **PDB:** 
-  - standard textual file describling the three-dimensional structure of molecules 
+  - standard textual file describing the three-dimensional structure of molecules 
   - They are used to represent atom connectivity
-- **DCD:** are typically large binary files that contain the time varying atomic coordinates for the system. Each set of coordinats correspond to one frame in time. 
-- **PSF:** contains all of the molecule-specific information needed to applya particular force field to a molecular system. The PSF file conatins six main sections of interest
+- **DCD:** are typically large binary files that contain the time varying atomic coordinates for the system. Each set of coordinates correspond to one frame in time. 
+- **PSF:** contains all of the molecule-specific information needed to apply a particular force field to a molecular system. The PSF file contains six main sections of interest
   - atoms
   - bonds 
   - angles
@@ -18,9 +18,17 @@
 
 ## PDB Files
 
-- Poular PDB archives
+- Popular PDB archives
   - [wwPDB](https://www.wwpdb.org/)
   - [RCSB](https://www.rcsb.org/)
+
+-  In 2014, PDB developers stopped modifying and extending the PDB format.
+-  Because the PDB format uses column position to delineate fields, one of its major limitations is that it does not allow for the description of structures containing more than 99,999 atoms.
+-  This is because only 5 column positions are reserved for an atom's serial number.
+-  Similarly, since only one column can describe a chain ID, no structure in PDB format can have more than 62 chains (allowed characters are: a-z, A-Z, and 0-9).
+-  There is a new standard format for structures in the PDB archive: PDBx/mmCIF, or simply mmCIF
+
+The following examples use 2hac protein. Wikipedia has a good documentation on [protein structures](https://en.wikipedia.org/wiki/Protein_primary_structure). If you need to understand what is primary structure, secondary structure etc. 
 
 ```s
 $ grep ATOM 2hac.pdb | tail
@@ -36,7 +44,7 @@ ATOM   1088  HB2 ASP B  30   14.359   7.957  19.136  1.00  0.00 H
 ATOM   1089  HB3 ASP B  30   14.164   9.634  18.625  1.00  0.00 H
 ```
 - It consist of following sections
-  - Title Section : General details about moleculs in the file
+  - Title Section : General details about molecules in the file
   -  
 
 ### Title Section
@@ -104,9 +112,42 @@ SSBOND   1 CYS A    2    CYS B    2                          1555   1555  2.02
 
 - CYS : Short of residue name (Cysteine)
 - A, B, ... are chain IDs
-- 2, ... redisue number within the chain
-- 1555 1555 is summetry operators
+- 2, ... residue number within the chain
+- 1555 1555 is symmetry operators
 - 2.02 length of disulfide bond
+
+The below records LINK and CONECT are mostly used for Heterogens. It is discussed later.
+
+The LINK record specifies an inter-residue connection(connection between residues #912 and #913 in below example) 
+```s
+LINK         O4  BGC A 912                 C1  BGC A 913     1555   1555  1.42
+```
+- A : Chain
+- BGC : residue in chain A
+- O4 : atom in BGC #912
+- C1 : atom in BGC #913
+- 1.42 : Bond distance between two atoms
+
+The connection within a residue is denoted by CONECT record:
+```s
+CONECT 6748 8743
+```
+This example simply links two atoms (#6748 and #8743). Below is a more complicated example:
+
+```s
+CONECT10783107841078810790
+```
+
+Again, this very compact format is due to using column numbers to delinate fields, instead of using a field separator character (like a comma or space). This is what the above record would like with spaces between each field:
+
+```s
+CONECT 10783 10784 10788 10790
+```
+To understand what's going on in this record, compare it with the following image (click for a larger version):
+
+![](./Figures/901.png)
+
+In the above BGC residue, each atom is labeled by its serial number. Now we can see that atom 10783 is connected to 10784, 10788, and 10790.
 
 ### Crystallographic and Coordinates Section
 
@@ -160,7 +201,7 @@ ENDMDL
   -  A is chain ID
   -  -3 is residue ID
   -  -24.877 1.931 -4.644 ...orthogonal coordinates of the atom
-  -  1.00 ... occupancy (propotion of time atom spends occupying a praticualr position in case of flexible molecules). If all atoms take only one conformation, so their occupacy is 100%(1.00)
+  -  1.00 ... occupancy (proportion of time atom spends occupying a particular position in case of flexible molecules). If all atoms take only one conformation, so their occupancy is 100%(1.00)
   -  0.00 ... temperature factor(B-factor)
     -  C ... elemental symbol on periodic table
   - A **TER record** is given after all atoms of a chain are listed 
@@ -199,9 +240,185 @@ HETNAM     BGC BETA-D-GLUCOSE
 ```s
 HETATM10783  C2  BGC A 901      11.313  82.102 123.399  1.00195.30           C 
 ```
+The image below shows all heterogens present in **4HG6**:
+
+![](./Figures/4hg6_het.png)
+
+- BGC : $\beta$ -D-Glucose (the fig has multiple ones liked together)
+- UDP : uridine diphosphate
+- LDA : lauryl dimethylamine-n-oxide
+
+Further Hetrogens use LINK and CONECT records discussed earlier
+
+## PDBx/mmCIF Files
+
+- To overcome limitations of PDB now we have new standard format for structures in the PDB archive: PDBx/mmCIF, or simply mmCIF, which stands for "Macromolecular CIF".
+
+- The name derives from the Crystallographic Information File (CIF) format, which describes small molecules.
 
 ## PSF Files
 
-PSF files are required becuse in PDB 
+- PSF files are required because :
+  -  in PDB the bonds between most atoms are not explicitly defined. 
 
-- **CHARMM PSF:**  
+  - A PDB file only describes bond between heterogen atoms explicitly (LINK and CONECT records)
+
+  -  Bonds between residues are implicitly present given (SEQRES records for primary protein structure, SSBOND etc. for secondary protein structure)
+  -  **CHARMM Topology** can be read by:
+      -  CHARMM
+      -  NAMD
+      -  OpenMM
+      -  GENESIS
+  - The following programs cannot read **CHARMM Topology** :
+    - GROMACS
+    - LAMMPS
+    - Desmond
+    - AMBER
+- So we use a PSF file and move all connectivity information into that. 
+  - PDB : now describes coordinates
+  - PDF : describes connectivity
+- Combining PDB and PSF we can recreate topology in another format. 
+- A PSF File Should not be modified directly
+
+### CHARMM PSF
+  - A PSF file created and used internally by CHARMM and other programs.
+  - The default CHARMM PSF is same as XPLOR 
+  ```s
+  PSF EXT CMAP CHEQ XPLOR
+
+          3 !NTITLE
+  * GENERATED BY CHARMM-GUI (HTTP://WWW.CHARMM-GUI.ORG) V1.8 ON JUN, 19. 2017. JOB
+  * READ PDB, MANIPULATE STRUCTURE IF NEEDED, AND GENERATE TOPOLOGY FILE          
+  *  DATE:     6/19/17     13:48:15      CREATED BY USER: apache                  
+
+  1094 !NATOM
+      1 PROA  -3  ASP  N  NH3  -0.300000  14.0070  0  0.00000  -0.301140E-02
+  ```
+  - The first line gives optional PSF file features supported by the present PSF file.
+  - Default CHARMM format is same as XPLOR
+  - EXT is "extended format" allow longer atom names
+  - CMAP is dihedral cross-term corrections
+  - CHEQ is an optional which is not usually important
+  - 3 !NTITLE means title section is 3 lines long
+  - The lines starting with * are title lines
+  - The atom selection looks like this:
+
+| Atom ID 	| Segment ID 	| Residue ID 	| Res. Name 	| Atom Name 	| Atom Type 	| Charge 	|  Mass  	|
+|:-------:	|:----------:	|:----------:	|:---------:	|:---------:	|:---------:	|:------:	|:------:	|
+|    1    	|    PROA    	|     -3     	|    ASP    	|     N     	|    NH3    	|  -0.30 	| 14.007 	|
+|    2    	|    PROA    	|     -3     	|    ASP    	|    HT1    	|     HC    	|  0.33  	| 1.0080 	|
+|         	|            	|            	|           	|           	|           	|        	|        	|
+  - 1094 !NATOM means there are 1094 lines in the atom list that follows
+  - The value after mass column is a boolean indicating whether the atom position is constrained(fixed) or not. 
+  - The last two columns are Drude particle force field settings. They correspond to the atomic polarizability and atomic Thole scale factor, respectively. 
+  - The next section contains a list of all bonds between the various atoms.
+  ```s
+  1102 !NBOND: bonds
+   2    1     3     1    4    1     7    5
+  10    7    12    10    1    5    13    5
+[...]
+  ```
+-  Bonds are listed four-pairs per line. Each pair specifies the atom numbers involved in the bond. For example, the first bond is between atoms 2 and 1, the second bond is between atoms 3 and 1, the third is between 4 and 1, and so on
+-  The angle section contains a list of all bonded atoms that form an angle:
+
+```s
+1994 !NTHETA: angles
+  2    1    3    2    1    4    2    1    5
+  3    1    4    3    1    5    4    1    5
+[...]
+```
+- Atoms are listed in groups of 3, with up to 3 groups (or 9 atoms) per line. The first angle contains atoms 2, 1, and 3; the second group contains atoms 2, 1, and 4; and so on. Essentially, what this means is that atom 1 is connected both to atom 2 and atom 3, and that together, the three atoms form an angle. 
+- It does not say what the actual value for the angle is. To calculate that, you need to know the coordinates of each atom, and that information is in the CRD or PDB files, not the PSF files.
+- Similar to the angles section, this section lists every set of 4 connected atoms that form a dihedral angle. It looks like this:
+```s
+2904 !NPHI: dihedrals
+    1    5    7     8    1    5     7     9
+    1    5    7    10    1    5    13    14
+[...]
+```
+- In this case, two sets of dihedral angles are given per line.
+-  In the above example, atoms 1, 5, 7, and 8 form one dihedral angle, and atom 1 is connected to atom 5, atom 5 to atom 7, and atom 7 to atom 8. In other words, each atom that forms a dihedral angle is connected to the next atom in that angle's sequence
+-  This is important as a distinction between regular dihedral angles and improper dihedral angles
+-  An improper dihedral angle is a set of four atoms where three of the given atoms are connected to the other "central" atom
+```s
+148 !NIMPHI: impropers
+    13     5    15    14    10     7    12    11
+    15    13    17    16    24    17    26    25
+[...]
+```
+-  In each improper dihedral angle, the first atom in the set is the central atom that the other three are attached to. So, for example, atom 13 is connected to atoms 5, 15, and 14; atom 10 is connected to 7, 12, and 11; and so on.
+
+#### Donors Section
+
+- The donors section lists 4 pairs of atoms per line, where each pair represents a hydrogen-bond donor defined in CHARMM topology files. Specifically, the first atom in the pair is the heavy atom to which a hydrogen is covalently bonded, and the second atom is the actual hydrogen atom. The first couple of lines in this section looks like this.
+```s
+116 !NDON: donors
+    1     2     1     3     1     4    15    16
+[...]
+```
+- The first line says that 116 donors follow. The second line says that atoms 1 and 2, together, form a hydrogen-bond donor group. If we look back to the atom section, we'll see that atom 1 is a nitrogen atom, and atom 2 is a hydrogen atom. The next two pairs given (1,3 and 1,4) involve the same nitrogen atom and two other hydrogen atoms. In other words, this nitrogen atom donates three hydrogen atoms.
+- It is possible that a hydrogen atom might not be explicitly included in the file, in which case the second atom in the pair would be listed as "0".
+
+#### Acceptors Section
+
+- Like the donors section, the acceptors section lists four pairs of atoms per line. In this case, the two atoms in the pair represent the accepting side of a hydrogen-bond. Just like with the donors section, the two atoms listed in each pair are covalently bonded to each other. Here are the first two lines of this section:
+
+```s
+92 !NACC: acceptors
+    11    10    12    10    14    13    22     0
+[...]
+```
+- Atom 10 is a carbon atom, and 11 and 12 are both oxygen atoms. So carbon atom #10 accepts two hydrogen bonds.
+
+- Just like with NDON, some acceptor atoms might not be included in the protein structure, so they will be listed as "0".
+
+#### Other Sections
+
+- There are few other sections specific to CHARMM which are not relevant unless the simulation is done in CHARMM 
+
+### CHARMM-GUI PDB Reader and Manipulator
+
+- This [program](https://charmm-gui.org/?doc=input/pdbreader) gives  additional output files in PSF and PDB formats. 
+- These formats are recognized by a wider variety of programs, and they are useful because they explicitly describe the connectivity and coordinates of all atoms in a structure.
+- This makes it possible to combine a PDB file (which describes coordinates) with a PSF file (which describes connectivity) to recreate a topology in another format.
+
+## Topology Files
+
+### CHARMM Topology
+
+- Molecular modeling programs like CHARMM can be used to simulate a set of molecules. In order to do so, they need to know the following things about the molecule:
+
+  1. What atoms are in the molecule?
+  2. How are those atoms connected (e.g., with covalent bonding)?
+  3. Where those atoms are positioned?
+
+- A CHARMM topology gives a list of atoms and their connectivity
+- It begins with CHARMM title
+```s
+* CHARMM example topology file
+*
+    19  1
+```
+- A CHARMM title can be any number of lines, as long as each line starts with an asterisk 
+- The last line contains only an asterisk. The numbers 19 and 1 indicate that this topology file was designed for the CHARMM19 force field.
+- After the header comes a list of atom types used in the file. Each atom type is defined like this:
+```s
+    MASS   id    name    molar-mass    mmff
+```
+
+- MASS : Indicates an atom definition follows
+- id : unique number assigned to atom type
+- name (atom type): the name can group to which the atom is attached. Eg: 
+```s
+MASS    1  H    1.00800 H
+MASS    2  CH2  12.0111 C
+MASS    3  CH3  12.0111 C
+```
+- molar-mass : number of grams in one mole of atom
+- mmff : abbreviation of atom given in periodic table
+- Another example with name and mmff being same looks like follows:
+```s
+MASS    1  H    1.00800 H
+MASS    2  O   15.99900 O
+```
+- 
