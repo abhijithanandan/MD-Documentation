@@ -79,5 +79,30 @@ patch DISU BPTI:5 BPTI:55
 patch DISU BPTI:14 BPTI:38
 patch DISU BPTI:30 BPTI:51
 ```
-- 
 
+## Main commands 
+
+- topology [list] <file name>
+  - Purpose: Read in molecular topology definitions from file.
+  - Arguments: <file name>: CHARMM format topology file.
+    - list: Lists all currently specified topology files.
+    - residues: Return a list of the known residue topologies.
+    - patches: Return a list of the known residue patches.
+  - Context: Beginning of script, before segment. May call multiple times.
+
+- topology alias <alternate residue name> <existing residue name>
+  - Purpose: Provide alternate names for residues found in topology file.
+  - Context: Before reading sequence with pdb. May call multiple times.
+
+- pdbalias residue <alternate name> <real name>
+  - Purpose: Provide translations from residues found in PDB files to proper residue names read in from topology definition files.
+  - Arguments: <alternate name>:
+    - Residue name found in PDB file.
+    - <real name>: Residue name found in topology file or aliases.
+  - Context: Before reading sequence with pdb. May call multiple times.
+
+- segment [segids] [resids] [residue] [first] [last] <segment ID> [resid] [atom name] { <commands>
+}
+- Purpose: Build a segment of the molecule. A segment is typically a single chain of protein or DNA,
+with default patches applied to the termini. Segments may also contain pure solvent or lipid. Options
+[segids] [resids] [residue] [first] [last] are used to query information about the specified segment.
